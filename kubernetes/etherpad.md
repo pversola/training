@@ -4,9 +4,9 @@ This pad text is synchronized as you type, so that everyone viewing this page se
 
 Etherpad Lite on Github: http://j.mp/ep-lite
 
-====================================================================================================
-Day 1
-====================================================================================================
+
+## Day 1
+
 Etherpad link: https://etherpad.openstack.org/p/k8s_workshop
 Slide link:  https://docs.google.com/presentation/d/1117Qyk_XId5RSOF0ns10ZWssKzHflXMt8AUkRZSeaOE/edit?usp=sharing
 
@@ -30,79 +30,137 @@ https://raw.githubusercontent.com/ysirawit/k8s_workshop/master/ingress_foo.yaml
 https://raw.githubusercontent.com/ysirawit/k8s_workshop/master/ingress_bar.yaml
 
 
+## Day 2
 
-
-====================================================================================================
-Day 2
-====================================================================================================
-
-Initial Setup
+#### Initial Setup
 1. Launch 2 Instance with General2 C and B (2 CPU with Ram 4GB and 1 CPU with Ram 2GB) with Ubuntu 18.04
 2. Disable Cloud firewall
 
-#Step 3-6 Do every instance
-3. SSH to Instance
-4. $ sudo -i
-5. # apt update -y
-6. # apt upgrade -y
+#### Step 3-6 Do every instance
+3. `ssh <HOST>`
+4. `sudo -i`  
+5. `apt update -y`  
+6. `apt upgrade -y`  
 
-# In Master node
-7. # git clone https://github.com/kubernetes-sigs/kubespray.git  /opt/kubespray
-8. # ssh-keygen
-9. # cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys 
-10. # cat /root/.ssh/id_rsa.pub 
+### **In Master node**
+7. `git clone https://github.com/kubernetes-sigs/kubespray.git  /opt/kubespray`
+8. `ssh-keygen`
+9. `cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys` 
+10. `cat /root/.ssh/id_rsa.pub`
 11. copy /root/.ssh/id_rsa.pub to worker node at /root/.ssh/authorized_keys
-- At Worker node
-$ nano /root/.ssh/authorized_keys
+- At Worker node  
+`nano /root/.ssh/authorized_keys`
 - paste publickey
 - Ctrl + x , Y , Enter
 
 
-Kubespray 
-Install (Setup Cluster)
-# cd /opt/kubespray/
-# git checkout release-2.12
-# apt install python3-pip python-pip python3-setuptools python-setuptools
-# pip install -r requirements.txt
-# cp -rfp inventory/sample inventory/csp_cluster
-Get private IP from portal
-# nano inventory/csp_cluster/inventory.ini
-edit host in file with your instance ip https://github.com/ysirawit/k8s_workshop/blob/master/host_file.jpg
-# nano inventory/csp_cluster/group_vars/k8s-cluster/addons.yml
-edit  "helm_enabled: true" , "ingress_nginx_enabled: true"  ,  and save
-# ansible-playbook -i inventory/csp_cluster/inventory.ini  -u root cluster.yml
+## **Kubespray**
+### Install (Setup Cluster)  
+`cd /opt/kubespray/`  
+`git checkout release-2.12`  
+`apt install python3-pip python-pip python3-setuptools python-setuptools`  
+`pip install -r requirements.txt`  
+`cp -rfp inventory/sample inventory/csp_cluster`  
+Get private IP from portal  
+`nano inventory/csp_cluster/inventory.ini`  
+edit host in file with your instance ip  
+![host_file](https://github.com/ysirawit/k8s_workshop/blob/master/host_file.jpg "host_file")
 
-Try:
-    kubectl apply -f https://raw.githubusercontent.com/ysirawit/k8s_workshop/master/nginx-deployment.yaml
+```
+[all]
+node1 ansible_host=<IP>
+node2 ansible_host=<IP>
+
+[kube-master]
+node1
+
+[etcd]
+node1
+
+[kube-node]
+node1
+node2
+
+[calico-rr]
+
+[k8s-cluster:childen]
+kube-master
+kube-node
+calico-rr
+```
+
+`nano inventory/csp_cluster/group_vars/k8s-cluster/addons.yml`  
+edit  
+```
+"helm_enabled: true" , 
+"ingress_nginx_enabled: true"
+```
+and save  
+`ansible-playbook -i inventory/csp_cluster/inventory.ini -u root cluster.yml`
+
+Try:  
+    `kubectl apply -f https://raw.githubusercontent.com/ysirawit/k8s_workshop/master/nginx-deployment.yaml`
 
 
     
-Scale Cluster
+### Scale Cluster
 Launch 1 Instance with General2 B (1 CPU with Ram 2GB) with Ubuntu 18.04
 Disable Cloud firewall
 
-# In New worker node
-SSH to Instance
-$ sudo -i
-$ apt update -y
-$ apt upgrade -y
+## In New worker node
+`ssh <HOST>`  
+`sudo -i`  
+`apt update -y`  
+`apt upgrade -y`  
 
-# In Master node
-SSH to Master node
-$ sudo -i
-# cat /root/.ssh/id_rsa.pub 
+## In Master node
+`ssh <HOST>`  
+`sudo -i`  
+`cat /root/.ssh/id_rsa.pub`  
 copy /root/.ssh/id_rsa.pub to worker node at /root/.ssh/authorized_keys
-- At Worker node 2
-$ sudo nano /root/.ssh/authorized_keys
+- At Worker node 2  
+`sudo nano /root/.ssh/authorized_keys`
 - paste publickey
 - Ctrl + x , Y , Enter
-# cd /opt/kubespray/
-# nano inventory/csp_cluster/inventory.ini
+
+`cd /opt/kubespray/`
+`nano inventory/csp_cluster/inventory.ini`
 add node3 and IP to [all]
-add "node3" to [kube-node]  https://github.com/ysirawit/k8s_workshop/blob/master/scale-node-host.jpg
+add "node3" to [kube-node]  
+![scale-node-host](https://github.com/ysirawit/k8s_workshop/blob/master/scale-node-host.jpg "scale-node-host")
+
+
+```
+[all]
+node1 ansible_host=<IP NODE1>
+node2 ansible_host=<IP NODE2>
+node3 ansible_host=<IP NODE3>
+
+[kube-master]
+node1
+
+[etcd]
+node1
+
+[kube-node]
+node1
+node2
+node3
+
+[calico-rr]
+
+[k8s-cluster:childen]
+kube-master
+kube-node
+calico-rr
+```
+
 save file
-# byobu
-# ansible-playbook -i inventory/csp_cluster/inventory.ini  -u root scale.yml
+
+`byobu`  
+`ansible-playbook -i inventory/csp_cluster/inventory.ini  -u root scale.yml`  
+
+## Monitor
 
 Grafana
 https://grafana.com/grafana/dashboards/6781
